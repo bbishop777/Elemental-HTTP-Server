@@ -2,20 +2,14 @@ var http = require('http');
 var querystring = require('querystring');
 var fs = require('fs');
 
-// var appVar= {};
-
-// function setVariables(request, appVar) {
-//  //request.method;
-//  //url = request.url;
-// }
 
 var server = http.createServer(function (request, response) {
 
 
 
-  fs.readFile('./topHalfElementName.html', function (err, data){
-    console.log(querystring.parse(data.toString()));
-  });
+  // fs.readFile('./public/indexTemplate.html', function (err, data){
+  //   console.log(querystring.parse(data.toString()));
+  // });
 
 
 
@@ -30,23 +24,44 @@ var server = http.createServer(function (request, response) {
   var symbol = '';
   var num = '';
   var desc = '';
+  // var fat = [];
+
+
 
   if(request.url === '/') {
     request.url = '/index.html';
   }
 
+  request.on('data', function (buffer) {
+    buff = querystring.parse(buffer.toString());
+    return buff;
+  });
 
   request.on('end', function () {
     //if get call function..return headers....if post call function..change files
     return reqHandler(request);
   });
 
-  function setHeader() {
-    response.statusCode = status;
-    response.statusMessage = statusMess;
-    response.setHeader('Server', 'Brad\'s Server');
-    response.setHeader('Content-type' , 'text/'+ contType);
-  }
+
+
+
+//you could write the 'if' like this:
+//switch(request.method) {
+// case 'GET' :
+// (do GET Request)
+// break;
+//  case 'POST' :
+//  (do POST Request)
+//  break;
+//  case 'PUT' :
+//  (do PUT)
+//  break;
+//  case 'DELETE' :
+//  (do DELETE)
+//  break;
+//
+//  default :   //this is the default action if no case is met
+//  console.log('Invalid request method')
 
   function reqHandler(request) {
     if(request.method == 'GET') {
@@ -60,32 +75,60 @@ var server = http.createServer(function (request, response) {
         }
       });
     } else if(request.method == 'POST') {
+        var fileArry = createFileArry();
+        console.log(fileArry, 'errrorrrr');
         if(request.url === '/elements.html') {
-          return parseMe(buff);
+          return parseMe(buff, fileArry);
         } else {
           return error403Msg(); //illegal post
         }
     }
   }
 
-  request.on('data', function (buffer) {
-    buff = querystring.parse(buffer.toString());
-    return buff;
-  });
+  function setHeader() {
+    response.statusCode = status;
+    response.statusMessage = statusMess;
+    response.setHeader('Server', 'Brad\'s Server');
+    response.setHeader('Content-type' , 'text/'+ contType);
+  }
+//function is breaking here...maybe because async nature of
+//fs.readdir...doesn't return the arry to above
+  function createFileArry () {
+    fs.readdir('./public/', function(err, files) {
+      var fat = files.filter(function (element) {
+        switch(element) {
+          case '400.html' :
+          case '403.html' :
+          case '404.html' :
+          case '.keep' :
+          case 'css' :
+          case 'index.html' :
+          case 'indexTemplate.html' :
+            return false;
+
+          default :
+            return true;
+        }
+      });
+    console.log(fat);
+    });
+    // return fat;
+
+  }
 
 
-  function parseMe(buff) {
-    var details = checkForParams(buff);
-
-    console.log("Am I heeeeeereeee?", details);
+  function parseMe(buff, fileArry) {
+    var details = checkForParams(buff, fileArry);
       fs.readFile('./topHalfElementName.html', function (err, data){
         if(err) {
           console.log(err);
           return error400Msg();
         } else {
            top = data.toString()
-          .replace('{{ElementName}}', details.eName)
-          .replace('{{ElementName}}', details.eName);
+           //the forward slashes put into a regex standard and the 'g'
+           //says do it 'globally'
+          .replace(/{{ElementName}}/g, details.eName);
+          // .replace('{{ElementName}}', details.eName);
 
           fs.readFile('./elementSymbol.html', function (err, data){
             if(err) return console.log(err);
@@ -116,18 +159,18 @@ var server = http.createServer(function (request, response) {
   }
 
   function createFile(buff, top, symbol, num, desc) {
-    fs.writeFile('./public/' + buff.elementName + '.html', top + symbol + num + desc, function (err){
+    fs.writeFile('./public/' + buff.elementName.toLowerCase() + '.html', top + symbol + num + desc, function (err){
       if(err) {
         return console.log(err, "Something went wrong");
       } else {
         contType = 'application/json';
         setHeader();
-        response.end('{ "success" : true }');
+        response.end(JSON.stringify({ "success" : true }));
       }
     });
   }
 
-  function checkForParams(buff) {
+  function checkForParams(buff, fileArry) {
     if(buff.elementName && buff.elementSymbol && buff.elementAtomicNumber && buff.elementDescription) {
 
       var details = {eName : buff.elementName,
