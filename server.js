@@ -78,11 +78,10 @@ var server = http.createServer(function (request, response) {
       // in the createFileArry function...see that function for more notes
     } else if(request.method == 'POST') {
         createFileArry(function (fileArry) {
-        isAllowed(fileArry, buff);
-        console.log('Did I make it?');
-        // recreateIndex(fileArry);
+                // recreateIndex(fileArry);
           if(request.url === '/elements.html') {
-            return parseMe(buff, fileArry);
+            isAllowed(fileArry, buff);
+            console.log('');
           } else {
             return error403Msg(); //illegal post
           }
@@ -135,11 +134,11 @@ var server = http.createServer(function (request, response) {
   }
 
   function isAllowed(fileArry, buff) {
-    fileArry.some(function (element) {
-      if (element === (buff.elementName.toLowerCase() +'.html')) {
+    if(fileArry.indexOf(buff.elementName.toLowerCase() +'.html') < 0) {
+      return parseMe(buff, fileArry);
+      } else {
         error403Msg();
-      } else { return; }
-    });
+      }
   }
 
   // function recreateIndex(fileArry)
@@ -173,6 +172,7 @@ var server = http.createServer(function (request, response) {
                     } else {
                       desc = data.toString()
                       .replace('{{describe}}', details.eDesc);
+                      console.log('Should not be here 1');
                       createFile( buff, top, symbol, num, desc);
                     }
                   });//this closes read file description.html
@@ -190,6 +190,8 @@ var server = http.createServer(function (request, response) {
         return console.log(err, "Something went wrong");
       } else {
         contType = 'application/json';
+        console.log('Should not be here 2');
+        status = 200;
         setHeader();
         response.end(JSON.stringify({ "success" : true }));
       }
@@ -227,7 +229,7 @@ var server = http.createServer(function (request, response) {
   }
 
   function error403Msg () {
-    fs.readFileSync('./public/403.html', function (err, data) {
+    fs.readFile('./public/403.html', function (err, data) {
       if (err) {
         console.log(err);
         response.end();
