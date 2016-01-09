@@ -24,7 +24,6 @@ var server = http.createServer(function (request, response) {
   var symbol = '';
   var num = '';
   var desc = '';
-  var fat = [];
 
 
 
@@ -74,14 +73,18 @@ var server = http.createServer(function (request, response) {
           return console.log('Response ended');
         }
       });
+      //Passing a function to createFileArry is similar to bind.  It
+      // is callback function.  The argument var 'fileArry' will be filled-in
+      // in the createFileArry function...see that function for more notes
     } else if(request.method == 'POST') {
-        var fileArry = createFileArry();
-        console.log(fileArry, 'errrorrrr');
-        if(request.url === '/elements.html') {
-          return parseMe(buff, fileArry);
-        } else {
-          return error403Msg(); //illegal post
-        }
+        createFileArry(function (fileArry) {
+          console.log(fileArry, 'errrorrrr');
+          if(request.url === '/elements.html') {
+            return parseMe(buff, fileArry);
+          } else {
+            return error403Msg(); //illegal post
+          }
+      });
     }
   }
 
@@ -91,22 +94,46 @@ var server = http.createServer(function (request, response) {
     response.setHeader('Server', 'Brad\'s Server');
     response.setHeader('Content-type' , 'text/'+ contType);
   }
-//function is breaking here...maybe because async nature of
-//fs.readdir...doesn't return the arry to above
-  function createFileArry () {
-    return fs.readdirSync('./public/').filter(function (element) {
-      switch(element) {
-        case '400.html' :
-        case '403.html' :
-        case '404.html' :
-        case '.keep' :
-        case 'css' :
-        case 'index.html' :
-        case 'indexTemplate.html' :
-          return false;
+// Here the 'cb' or callback function (aka 'cheeseburger') that is passed
+// in is not activated until called below.  So the reqHandler function above
+// calls createFileArry and passes in a callback function for it. createFileArry
+// then reads the public folder in the Elemental-HTTP-Server folder and
+// assigns the content to 'files', an array, as long as there are not any errors.
+// We then create a var='fixins'that sorts the files individually comparing them
+// against the files we don't want included (cases). If they match, a false
+// value is given and that element is not put in the new array.  If no match,
+// a true value is give and that element is put into the new array. The array is
+// assigned to fixins.  After this is all done, we call the callback function
+// that was passed-in in the beginning. This is done because of the
+// asynchronous nature of fs.readdir.  Before this design, I tried to call
+// createFileArry with no arguments passed in and return the result of the
+// filter function on the files.  I also tried assigning those results to a
+// variable that was globally declared.  Lastly I split the 'filter' and
+// 'fs.read' functions apart and tried to run them that way.  In all cases,
+// the filter portion would work,but control would return to the reqHandler
+// function before filter was done, resultingin no array being given back
+// to reqHandler (undefined). A more straightforward way to do it is to use
+// fs.readdirSync which I did and is found in the previous commit on github
+  function createFileArry (cb) {
+    fs.readdir('./public/', function(err, files) {
+      if(err) { return console.log(err, 'Unexpected error');
+      } else {
+        var fixins = files.filter(function (element) {
+          switch(element) {
+            case '400.html' :
+            case '403.html' :
+            case '404.html' :
+            case '.keep' :
+            case 'css' :
+            case 'index.html' :
+            case 'indexTemplate.html' :
+              return false;
 
-        default :
-          return true;
+            default :
+              return true;
+          }
+        });
+        cb(fixins);
       }
     });
   }
