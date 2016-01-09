@@ -24,7 +24,7 @@ var server = http.createServer(function (request, response) {
   var symbol = '';
   var num = '';
   var desc = '';
-  // var fat = [];
+  var fat = [];
 
 
 
@@ -94,26 +94,21 @@ var server = http.createServer(function (request, response) {
 //function is breaking here...maybe because async nature of
 //fs.readdir...doesn't return the arry to above
   function createFileArry () {
-    fs.readdir('./public/', function(err, files) {
-      var fat = files.filter(function (element) {
-        switch(element) {
-          case '400.html' :
-          case '403.html' :
-          case '404.html' :
-          case '.keep' :
-          case 'css' :
-          case 'index.html' :
-          case 'indexTemplate.html' :
-            return false;
+    return fs.readdirSync('./public/').filter(function (element) {
+      switch(element) {
+        case '400.html' :
+        case '403.html' :
+        case '404.html' :
+        case '.keep' :
+        case 'css' :
+        case 'index.html' :
+        case 'indexTemplate.html' :
+          return false;
 
-          default :
-            return true;
-        }
-      });
-    console.log(fat);
+        default :
+          return true;
+      }
     });
-    // return fat;
-
   }
 
 
@@ -131,20 +126,20 @@ var server = http.createServer(function (request, response) {
           // .replace('{{ElementName}}', details.eName);
 
           fs.readFile('./elementSymbol.html', function (err, data){
-            if(err) return console.log(err);
-            else {
+            if(err) { return console.log(err) ;
+            } else {
               symbol = data.toString()
               .replace('{{&}}', details.eSym);
 
               fs.readFile('./atomNum.html', function (err, data) {
-                if(err) return console.log(err);
-                else {
+                if(err){ return console.log(err);
+                } else {
                   num = data.toString()
                   .replace('{{num}}', details.eNum);
 
                   fs.readFile('./description.html', function (err, data) {
-                    if(err) { return console.log(err);}
-                    else {
+                    if(err) { return console.log(err);
+                    } else {
                       desc = data.toString()
                       .replace('{{describe}}', details.eDesc);
                       createFile( buff, top, symbol, num, desc);
