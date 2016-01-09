@@ -78,7 +78,9 @@ var server = http.createServer(function (request, response) {
       // in the createFileArry function...see that function for more notes
     } else if(request.method == 'POST') {
         createFileArry(function (fileArry) {
-          console.log(fileArry, 'errrorrrr');
+        isAllowed(fileArry, buff);
+        console.log('Did I make it?');
+        // recreateIndex(fileArry);
           if(request.url === '/elements.html') {
             return parseMe(buff, fileArry);
           } else {
@@ -88,12 +90,6 @@ var server = http.createServer(function (request, response) {
     }
   }
 
-  function setHeader() {
-    response.statusCode = status;
-    response.statusMessage = statusMess;
-    response.setHeader('Server', 'Brad\'s Server');
-    response.setHeader('Content-type' , 'text/'+ contType);
-  }
 // Here the 'cb' or callback function (aka 'cheeseburger') that is passed
 // in is not activated until called below.  So the reqHandler function above
 // calls createFileArry and passes in a callback function for it. createFileArry
@@ -138,7 +134,15 @@ var server = http.createServer(function (request, response) {
     });
   }
 
+  function isAllowed(fileArry, buff) {
+    fileArry.some(function (element) {
+      if (element === (buff.elementName.toLowerCase() +'.html')) {
+        error403Msg();
+      } else { return; }
+    });
+  }
 
+  // function recreateIndex(fileArry)
   function parseMe(buff, fileArry) {
     var details = checkForParams(buff, fileArry);
       fs.readFile('./topHalfElementName.html', function (err, data){
@@ -223,7 +227,7 @@ var server = http.createServer(function (request, response) {
   }
 
   function error403Msg () {
-    fs.readFile('./public/403.html', function (err, data) {
+    fs.readFileSync('./public/403.html', function (err, data) {
       if (err) {
         console.log(err);
         response.end();
@@ -253,6 +257,12 @@ var server = http.createServer(function (request, response) {
     });
   }
 
+  function setHeader() {
+    response.statusCode = status;
+    response.statusMessage = statusMess;
+    response.setHeader('Server', 'Brad\'s Server');
+    response.setHeader('Content-type' , 'text/'+ contType);
+  }
 
 });
 
